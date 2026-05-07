@@ -1,0 +1,119 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { getCollection } from 'astro:content';
+
+function slug(id: string) { return id.replace(/\.md$/, ''); }
+const getStem = (id: string) => id.replace(/^[\d-]+/, '').replace(/\.md$/, '');
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map(post => ({ params: { slug: post.id.replace(/\.md$/, '') }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+
+const categoryStyles: Record<string, string> = {
+  '護膚技巧': 'bg-sage-100 text-sage-700',
+  '成分解析': 'bg-brand-100 text-brand-700',
+  '彩妝教學': 'bg-rose-100 text-rose-700',
+  '防曬知識': 'bg-amber-100 text-amber-700',
+};
+const tagStyle = categoryStyles[post.data.category] ?? 'bg-gray-100 text-gray-700';
+
+let relatedPosts: Array<{ title: string; slug: string; date: string; category: string }> = [];
+if (post.data.relatedPosts?.length) {
+  const allPosts = await getCollection('blog');
+  const relatedMap = new Map(allPosts.map(p => [getStem(p.id), p]));
+  relatedPosts = post.data.relatedPosts
+    .map(id => {
+      const rp = relatedMap.get(id);
+      if (!rp) return null;
+      return {
+        title: rp.data.title,
+        slug: slug(rp.id),
+        date: rp.data.date,
+        category: rp.data.category,
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => p !== null);
+}
+---
+
+<BaseLayout title={`${post.data.title} | 綻顏 BEAUSKIN`} description={post.data.excerpt}>
+  <Breadcrumb items={[
+    { label: '首頁', href: '/' },
+    { label: '美妝知識', href: '/blog' },
+    { label: post.data.title, href: `/blog/${slug(post.id)}` },
+  ]} />
+
+  <article class="py-12">
+    <div class="max-w-3xl mx-auto px-4">
+      <span class:list={['inline-block px-3 py-1 rounded-full text-sm', tagStyle]}>
+        {post.data.category}
+      </span>
+      <time class="block text-sm text-gray-400 mt-3">{post.data.date}</time>
+      <h1 class="font-serif text-3xl md:text-4xl text-brand-800 mt-3">{post.data.title}</h1>
+      <div class="w-16 h-0.5 bg-brand-300 mx-auto my-6"></div>
+
+      <div class="prose-beauskin text-gray-700 text-lg leading-relaxed">
+        <Content />
+      </div>
+    </div>
+  </article>
+
+  {relatedPosts.length > 0 && (
+    <section class="py-12 bg-brand-50">
+      <div class="max-w-3xl mx-auto px-4">
+        <h2 class="font-serif text-2xl text-brand-800 mb-6">相關文章</h2>
+        <div class="divide-y divide-gray-200">
+          {relatedPosts.map(rp => {
+            const catStyle = categoryStyles[rp.category] ?? 'bg-gray-100 text-gray-700';
+            return (
+              <div class="py-4 flex items-center justify-between gap-4">
+                <div class="min-w-0">
+                  <span class:list={['inline-block px-2 py-0.5 rounded-full text-xs mr-2', catStyle]}>
+                    {rp.category}
+                  </span>
+                  <a href={`/blog/${rp.slug}`} class="text-brand-800 hover:text-brand-600 transition-colors font-medium">
+                    {rp.title}
+                  </a>
+                </div>
+                <time class="text-sm text-gray-400 whitespace-nowrap">{rp.date}</time>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  )}
+</BaseLayout>
+
+<style>
+  .prose-beauskin :global(h2) {
+    @apply font-serif text-xl text-brand-800 mt-10 mb-4;
+  }
+  .prose-beauskin :global(h3) {
+    @apply font-serif text-lg text-brand-700 mt-8 mb-3;
+  }
+  .prose-beauskin :global(p) {
+    @apply mb-4;
+  }
+  .prose-beauskin :global(ul),
+  .prose-beauskin :global(ol) {
+    @apply mb-4 pl-6;
+  }
+  .prose-beauskin :global(li) {
+    @apply mb-2;
+  }
+  .prose-beauskin :global(strong) {
+    @apply text-brand-800;
+  }
+  .prose-beauskin :global(a) {
+    @apply text-brand-600 underline hover:text-brand-800 transition-colors;
+  }
+  .prose-beauskin :global(blockquote) {
+    @apply border-l-4 border-brand-300 pl-4 italic text-gray-500 my-6;
+  }
+</style>

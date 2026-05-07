@@ -1,0 +1,250 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import StarRating from '../../components/StarRating.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import ProductCard from '../../components/ProductCard.astro';
+
+// Category slug → Chinese name & SEO mapping
+const categoryMap: Record<string, { label: string; title: string; description: string }> = {
+  skincare: {
+    label: '護膚系列',
+    title: '護膚產品 | 綻顏 BEAUSKIN',
+    description: '綻顏 BEAUSKIN 護膚系列 — 玻尿酸保濕精華、維他命C亮澤精華、防曬隔離霜、茶樹面膜，為香港肌膚打造的溫和高效護膚方案。',
+  },
+  makeup: {
+    label: '彩妝系列',
+    title: '彩妝產品 | 綻顏 BEAUSKIN',
+    description: '綻顏 BEAUSKIN 彩妝系列 — 裸杏色霧面唇膏，絲絨質地持久顯色，為亞洲膚色量身打造的日常彩妝。',
+  },
+  bodycare: {
+    label: '身體護理',
+    title: '身體護理產品 | 綻顏 BEAUSKIN',
+    description: '綻顏 BEAUSKIN 身體護理系列 — 玫瑰滋養身體乳，深度滋潤保濕，淡雅玫瑰香氣讓肌膚綻放自然光澤。',
+  },
+};
+const allCategorySlugs = Object.keys(categoryMap);
+
+function getSlug(id: string) { return id.replace(/\.md$/, ''); }
+
+export async function getStaticPaths() {
+  const cats = ['skincare', 'makeup', 'bodycare'];
+  const products = await getCollection('products');
+  const productPaths = products.map(p => ({
+    params: { slug: p.id.replace(/\.md$/, '') },
+    props: { mode: 'product', product: p },
+  }));
+  const categoryPaths = cats.map(cat => ({
+    params: { slug: cat },
+    props: { mode: 'category', categorySlug: cat },
+  }));
+  return [...productPaths, ...categoryPaths];
+}
+
+const { mode, categorySlug, product } = Astro.props;
+const allProducts = await getCollection('products');
+
+// --- Category mode data ---
+let catInfo: { label: string; title: string; description: string } | undefined;
+let catFiltered: typeof allProducts = [];
+if (mode === 'category') {
+  catInfo = categoryMap[categorySlug];
+  catFiltered = allProducts.filter(p => p.data.category === catInfo!.label);
+}
+
+// --- Product mode data ---
+let productData: any;
+let ProductContent: any;
+let relatedProds: typeof allProducts = [];
+let skinTags: string[] = [];
+let featureTags: string[] = [];
+let breadcrumbItems: Array<{ label: string; href: string }> = [];
+
+if (mode === 'product') {
+  productData = product.data;
+  ProductContent = (await product.render()).Content;
+  relatedProds = allProducts.filter(p => p.id !== product.id).slice(0, 3);
+  skinTags = productData.tags.filter((t: string) =>
+    ['所有膚質', '乾性膚質', '油性/混合肌', '暗沉膚質'].includes(t)
+  );
+  featureTags = productData.tags.filter((t: string) => !skinTags.includes(t));
+  const catSlug = allCategorySlugs.find(c => categoryMap[c].label === productData.category) ?? '';
+  breadcrumbItems = [
+    { label: '首頁', href: '/' },
+    { label: productData.category, href: `/products/${catSlug}/` },
+    { label: productData.name, href: `/products/${getSlug(product.id)}` },
+  ];
+}
+---
+
+<!-- ====== CATEGORY LISTING ====== -->
+{mode === 'category' && catInfo ? (
+  <BaseLayout title={catInfo.title} description={catInfo.description}>
+    <Breadcrumb items={[
+      { label: '首頁', href: '/' },
+      { label: '全部產品', href: '/products' },
+      { label: catInfo.label, href: `/products/${categorySlug}/` },
+    ]} />
+
+    <div class="py-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <div class="text-center mb-10">
+          <p class="text-brand-500 text-sm tracking-[0.2em] uppercase font-medium mb-3">PRODUCTS — {catInfo.label}</p>
+          <h1 class="font-serif text-4xl text-brand-800">{catInfo.label}</h1>
+          <p class="text-gray-600 mt-4 max-w-2xl mx-auto">瀏覽 BEAUSKIN {catInfo.label}，為你的肌膚找到最適合的產品</p>
+        </div>
+
+        {catFiltered.length > 0 ? (
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {catFiltered.map(p => (
+              <ProductCard
+                name={p.data.name}
+                slug={getSlug(p.id)}
+                price={parseFloat(p.data.price.replace(/[^0-9.]/g, ''))}
+                shortDesc={p.data.shortDesc}
+                image={p.data.image}
+                tags={p.data.tags}
+              />
+            ))}
+          </div>
+        ) : (
+          <p class="text-center text-gray-500 py-12">此分類暫無產品</p>
+        )}
+
+        <!-- Category Navigation -->
+        <div class="mt-12 text-center border-t border-gray-100 pt-8">
+          <p class="text-sm text-gray-500 mb-4">瀏覽其他分類</p>
+          <div class="flex flex-wrap justify-center gap-3">
+            {allCategorySlugs.map(s => {
+              const isCurrent = s === categorySlug;
+              return (
+                <a
+                  href={`/products/${s}/`}
+                  class:list={[
+                    'px-6 py-2 rounded-full text-sm font-medium transition-colors',
+                    isCurrent ? 'bg-brand-700 text-white' : 'bg-brand-100 text-brand-700 hover:bg-brand-200',
+                  ]}
+                >
+                  {categoryMap[s].label}
+                </a>
+              );
+            })}
+            <a
+              href="/products"
+              class="px-6 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+            >
+              全部產品
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </BaseLayout>
+) : null}
+
+<!-- ====== PRODUCT DETAIL ====== -->
+{mode === 'product' && productData ? (
+  <BaseLayout
+    title={`${productData.name} ${productData.price} | 綻顏 BEAUSKIN`}
+    description={productData.shortDesc}
+    ogImage={productData.image}
+  >
+    <Breadcrumb items={breadcrumbItems} />
+
+    <!-- Product Hero -->
+    <div class="py-12">
+      <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+        <div class="bg-brand-50 rounded-2xl overflow-hidden">
+          <img src={productData.image} alt={productData.name} class="w-full h-[400px] md:h-[500px] object-cover mx-auto" />
+        </div>
+
+        <div>
+          <span class="inline-block px-4 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-700 mb-4">
+            {productData.category}
+          </span>
+          <h1 class="font-serif text-3xl text-brand-800">{productData.name}</h1>
+          <p class="text-gray-400 text-sm mt-1">{productData.nameEn}</p>
+          <div class="mt-4"><StarRating rating={productData.rating} /></div>
+          <div class="mt-6 flex items-baseline gap-3">
+            <span class="text-2xl font-medium text-brand-700">{productData.price}</span>
+            <span class="text-gray-400">/</span>
+            <span class="text-gray-500">{productData.volume}</span>
+          </div>
+          <p class="mt-6 text-gray-600 leading-relaxed">{productData.shortDesc}</p>
+          <div class="mt-6 flex flex-wrap gap-2">
+            {skinTags.map((tag: string) => (
+              <span class="px-3 py-1 rounded-full text-xs bg-sage-50 text-sage-600">{tag}</span>
+            ))}
+            {featureTags.map((tag: string) => (
+              <span class="px-3 py-1 rounded-full text-xs bg-brand-100 text-brand-700">{tag}</span>
+            ))}
+          </div>
+          <div class="mt-8 flex flex-wrap gap-4">
+            <a href="#" class="inline-flex items-center justify-center px-8 py-3 rounded-full bg-brand-700 text-white font-medium hover:bg-brand-800 transition-colors">立即購買</a>
+            <a href="#ingredients" class="inline-flex items-center justify-center px-8 py-3 rounded-full border-2 border-brand-700 text-brand-700 font-medium hover:bg-brand-50 transition-colors">了解更多</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ingredients" class="py-12 bg-brand-50">
+      <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-12">
+        <div>
+          <h2 class="font-serif text-2xl text-brand-800 mb-6">核心成分</h2>
+          <ul class="space-y-3">
+            {productData.ingredients.map((ingredient: string) => (
+              <li class="flex items-start gap-3">
+                <span class="w-2 h-2 rounded-full bg-brand-400 mt-2 flex-shrink-0"></span>
+                <span class="text-gray-600">{ingredient}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="prose-beauskin text-gray-600 leading-relaxed space-y-3">
+          <ProductContent />
+        </div>
+      </div>
+    </div>
+
+    <div class="py-12">
+      <div class="max-w-6xl mx-auto px-4">
+        <SectionHeader label="YOU MAY ALSO LIKE" title="相關產品" />
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {relatedProds.map((p) => (
+            <ProductCard
+              name={p.data.name}
+              slug={getSlug(p.id)}
+              price={parseFloat(p.data.price.replace(/^[^0-9.]*/, ''))}
+              shortDesc={p.data.shortDesc}
+              image={p.data.image}
+              tags={p.data.tags}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  </BaseLayout>
+) : null}
+
+<style>
+  .prose-beauskin :global(h2) {
+    @apply font-serif text-2xl text-brand-800 mb-6;
+  }
+  .prose-beauskin :global(h3) {
+    @apply font-serif text-lg text-brand-700 mt-6 mb-3;
+  }
+  .prose-beauskin :global(p) {
+    @apply mb-4;
+  }
+  .prose-beauskin :global(ul),
+  .prose-beauskin :global(ol) {
+    @apply mb-4 pl-6;
+  }
+  .prose-beauskin :global(li) {
+    @apply mb-2;
+  }
+  .prose-beauskin :global(strong) {
+    @apply text-brand-800;
+  }
+</style>

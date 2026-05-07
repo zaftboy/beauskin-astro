@@ -1,0 +1,107 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HeroBanner from '../../components/HeroBanner.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import ProductCard from '../../components/ProductCard.astro';
+
+const slug = (id: string) => id.replace(/\.md$/, '');
+const products = await getCollection('products');
+
+const categories = ['全部', '護膚系列', '彩妝系列', '身體護理'];
+const categoryHrefs: Record<string, string> = {
+  '全部': '/products',
+  '護膚系列': '/products/skincare/',
+  '彩妝系列': '/products/makeup/',
+  '身體護理': '/products/bodycare/',
+};
+---
+
+<BaseLayout
+  title="全部產品 | 綻顏 BEAUSKIN"
+  description="探索綻顏 BEAUSKIN 全線護膚、彩妝及身體護理產品，為香港肌膚量身打造。"
+>
+  <HeroBanner
+    label="OUR PRODUCTS"
+    title="全部產品"
+    subtitle="探索綻顏 BEAUSKIN 全線護膚、彩妝及身體護理產品"
+    compact
+  />
+
+  <!-- Category Filter -->
+  <div class="py-8 border-b border-gray-100">
+    <div class="max-w-6xl mx-auto px-4 flex flex-wrap justify-center gap-3">
+      {categories.map((cat, i) => {
+        const href = categoryHrefs[cat] ?? '/products';
+        return (
+          <a
+            href={href}
+            class:list={[
+              'px-6 py-2 rounded-full text-sm font-medium transition-colors',
+              i === 0
+                ? 'bg-brand-700 text-white'
+                : 'bg-brand-100 text-brand-700 hover:bg-brand-200',
+            ]}
+          >
+            {cat}
+          </a>
+        );
+      })}
+    </div>
+  </div>
+
+  <!-- Product Grid -->
+  <div class="py-12">
+    <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {products.map((product) => (
+        <div data-product={product.data.category}>
+          <ProductCard
+            name={product.data.name}
+            slug={slug(product.id)}
+            price={parseFloat(product.data.price.replace(/[^0-9.]/g, ''))}
+            shortDesc={product.data.shortDesc}
+            image={product.data.image}
+            tags={product.data.tags}
+          />
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Why Choose Us -->
+  <div class="py-16 bg-brand-50">
+    <div class="max-w-6xl mx-auto px-4">
+      <SectionHeader label="WHY BEAUSKIN" title="為什麼選擇綻顏？" />
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h3 class="font-serif text-xl text-brand-800 mb-2">品質保證</h3>
+          <p class="text-gray-600 text-sm leading-relaxed">所有產品均通過嚴格品質測試及香港皮膚科醫生認證，確保安全有效，讓你安心使用。</p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          </div>
+          <h3 class="font-serif text-xl text-brand-800 mb-2">天然成分</h3>
+          <p class="text-gray-600 text-sm leading-relaxed">採用天然植物萃取成分，零動物測試、不含酒精及人工香料，溫和呵護每寸肌膚。</p>
+        </div>
+        <div class="text-center">
+          <div class="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="font-serif text-xl text-brand-800 mb-2">為香港而設</h3>
+          <p class="text-gray-600 text-sm leading-relaxed">專為香港潮濕氣候研發配方，有效對抗都市污染與空調環境對肌膚造成的傷害。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</BaseLayout>

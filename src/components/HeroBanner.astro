@@ -1,0 +1,42 @@
+---
+interface Props {
+  title?: string;
+  subtitle?: string;
+  label?: string;
+  backgroundImage?: string;
+  compact?: boolean;
+}
+
+const {
+  title = '',
+  subtitle = '',
+  label = '',
+  backgroundImage = '',
+  compact = false,
+} = Astro.props;
+---
+
+{compact ? (
+  <section class="bg-brand-100 py-20 text-center">
+    <div class="max-w-6xl mx-auto px-4">
+      {label && <p class="text-brand-500 text-sm tracking-[0.2em] uppercase font-medium mb-3">{label}</p>}
+      {title && <h1 class="font-serif text-4xl text-brand-800">{title}</h1>}
+      {subtitle && <p class="text-gray-600 mt-4 max-w-2xl mx-auto">{subtitle}</p>}
+    </div>
+  </section>
+) : (
+  <section
+    class:list={[
+      'relative h-[600px] md:h-[700px] bg-cover bg-center flex items-center',
+    ]}
+    style={backgroundImage ? { backgroundImage: `url("${backgroundImage}")` } : undefined}
+  >
+    <div class="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-transparent"></div>
+    <div class="relative z-10 max-w-6xl mx-auto px-4">
+      {label && <p class="text-white/80 text-sm tracking-[0.2em] uppercase font-medium mb-4">{label}</p>}
+      {title && <h1 class="font-serif text-4xl md:text-5xl lg:text-6xl text-white">{title}</h1>}
+      {subtitle && <p class="text-white/80 mt-4 max-w-xl text-lg">{subtitle}</p>}
+      <slot name="cta" />
+    </div>
+  </section>
+)}

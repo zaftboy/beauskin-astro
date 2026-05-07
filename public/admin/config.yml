@@ -1,0 +1,49 @@
+backend:
+  name: github
+  repo: zaftboy/beauskin-astro
+  branch: main
+  base_url: https://api.github.com
+
+media_folder: public/images
+public_folder: /images
+
+locale: zh-Hant
+
+collections:
+  # Products
+  - name: products
+    label: 產品
+    folder: src/content/products
+    create: true
+    extension: md
+    format: frontmatter
+    slug: "{{slug}}"
+    fields:
+      - { label: "產品名稱", name: "name", widget: "string" }
+      - { label: "English Name", name: "nameEn", widget: "string" }
+      - { label: "分類", name: "category", widget: "select", options: ["護膚系列", "彩妝系列", "身體護理"] }
+      - { label: "價格", name: "price", widget: "string" }
+      - { label: "容量", name: "volume", widget: "string" }
+      - { label: "簡短描述", name: "shortDesc", widget: "string" }
+      - { label: "產品圖片", name: "image", widget: "image", required: false }
+      - { label: "標籤", name: "tags", widget: "list", field: { label: "標籤", name: "tag", widget: "string" } }
+      - { label: "適合膚質", name: "skinType", widget: "string" }
+      - { label: "評分", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, default: 5 }
+      - { label: "核心成分", name: "ingredients", widget: "list", field: { label: "成分", name: "ingredient", widget: "string" } }
+      - { label: "產品詳情", name: "body", widget: "markdown" }
+
+  # Blog Posts
+  - name: blog
+    label: 博客文章
+    folder: src/content/blog
+    create: true
+    extension: md
+    format: frontmatter
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    fields:
+      - { label: "文章標題", name: "title", widget: "string" }
+      - { label: "發佈日期", name: "date", widget: "datetime", format: "YYYY-MM-DD" }
+      - { label: "分類", name: "category", widget: "select", options: ["護膚技巧", "成分解析", "彩妝教學", "防曬知識"] }
+      - { label: "摘要", name: "excerpt", widget: "text" }
+      - { label: "相關文章", name: "relatedPosts", widget: "list", field: { label: "Slug", name: "slug", widget: "string" }, required: false }
+      - { label: "文章內容", name: "body", widget: "markdown" }

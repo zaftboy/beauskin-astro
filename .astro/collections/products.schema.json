@@ -1,0 +1,72 @@
+{
+  "$ref": "#/definitions/products",
+  "definitions": {
+    "products": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "nameEn": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "護膚系列",
+            "彩妝系列",
+            "身體護理"
+          ]
+        },
+        "price": {
+          "type": "string"
+        },
+        "volume": {
+          "type": "string"
+        },
+        "shortDesc": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "skinType": {
+          "type": "string"
+        },
+        "rating": {
+          "type": "number",
+          "default": 5
+        },
+        "$schema": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "nameEn",
+        "category",
+        "price",
+        "volume",
+        "shortDesc",
+        "image",
+        "tags",
+        "ingredients",
+        "skinType"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

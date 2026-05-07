@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HeroBanner from '../../components/HeroBanner.astro';
+import BlogCard from '../../components/BlogCard.astro';
+import { getCollection } from 'astro:content';
+
+const slug = (id: string) => id.replace(/\.md$/, '');
+
+const posts = await getCollection('blog');
+const sortedPosts = posts.sort((a, b) => new Date(b.data.date).valueOf() - new Date(a.data.date).valueOf());
+---
+
+<BaseLayout title="美妝知識 | 綻顏 BEAUSKIN" description="護膚技巧、成分解析、彩妝教學、防曬知識 — 讓你成為自己的美妝專家">
+  <HeroBanner
+    label="BEAUTY TIPS"
+    title="美妝知識"
+    subtitle="護膚技巧、成分解析、彩妝教學、防曬知識 — 讓你成為自己的美妝專家"
+    compact
+  />
+
+  <section class="py-12">
+    <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-2 gap-6">
+      {sortedPosts.map(post => (
+        <div>
+          <BlogCard
+            title={post.data.title}
+            slug={slug(post.id)}
+            date={post.data.date}
+            category={post.data.category}
+            excerpt={post.data.excerpt}
+          />
+        </div>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
