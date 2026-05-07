@@ -2,10 +2,13 @@
  * Cloudflare Pages Function — 聯繫表單處理
  * 路由: POST /api/contact
  *
- * 使用 Resend API 發送郵件。
- * 需在 Cloudflare Dashboard → Pages 項目 → Settings → Environment variables 中設置:
- *   變量名: RESEND_API_KEY
- *   值:     re_xxxxxxxxxxxx (從 resend.com 獲取)
+ * 使用 Cloudflare Email Routing + send_email binding。
+ *
+ * Cloudflare 配置:
+ * 1. Email → Email Routing → 開啟 beautydiaro.com
+ * 2. 創建 info@beautydiaro.com → 轉發到你的真實郵箱
+ * 3. Workers & Pages → beauskin-astro → Settings → Functions → Bindings
+ *    新增 binding: 類型 Send Email, 名稱 SEND_EMAIL, 郵箱 info@beautydiaro.com
  */
 
 export async function onRequest(context) {
@@ -19,7 +22,6 @@ export async function onRequest(context) {
   }
 
   try {
-    // 解析表單數據（支援 JSON 和 form 兩種）
     let data;
     const contentType = request.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
@@ -73,32 +75,22 @@ export async function onRequest(context) {
       </div>
     `;
 
-    // 通過 Resend API 發送郵件
+    // 通過 send_email binding 發送
     let emailSent = false;
-    const apiKey = env.RESEND_API_KEY;
-    if (apiKey) {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: 'BEAUSKIN 綻顏 <noreply@beautydiaro.com>',
-          to: ['info@beauskin.com.hk'],
+    if (env.SEND_EMAIL) {
+      try {
+        await env.SEND_EMAIL.send({
+          from: { name: 'BEAUSKIN 綻顏', email: 'info@beautydiaro.com' },
+          to: [{ email: 'info@beautydiaro.com' }],
           subject: `新查詢: ${escapeHtml(type || '一般')} - ${escapeHtml(name)}`,
           html: htmlContent,
-          reply_to: `${name} <${email}>`,
-        }),
-      });
-      if (res.ok) {
+        });
         emailSent = true;
-      } else {
-        const errBody = await res.text();
-        console.error('Resend API error:', res.status, errBody);
+      } catch (sendErr) {
+        console.error('Send email failed:', sendErr);
       }
     } else {
-      console.log('RESEND_API_KEY not configured. Form data:', { name, email, phone, type, message });
+      console.log('SEND_EMAIL binding 尚未配置。表單數據:', { name, email, phone, type, message });
     }
 
     return new Response(JSON.stringify({
