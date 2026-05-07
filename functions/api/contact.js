@@ -2,21 +2,15 @@
  * Cloudflare Pages Function — 聯繫表單處理
  * 路由: POST /api/contact
  *
- * 使用 send_email binding 發送郵件。
- * 需在 Cloudflare Dashboard → Pages 項目 → Settings → Functions → Bindings 中配置:
- *   - 類型: Send Email
- *   - 名稱: SEND_EMAIL
- *   - 郵件地址: 任意（實際發送由 Email Routing 控制）
- *
- * 同時需要在 Cloudflare Dashboard → Email → Email Routing 中:
- *   1. 添加 info@beautydiaro.com 作為自定義郵件地址
- *   2. 設置目標地址（你接收通知的真實郵箱）
+ * 使用 Resend API 發送郵件。
+ * 需在 Cloudflare Dashboard → Pages 項目 → Settings → Environment variables 中設置:
+ *   變量名: RESEND_API_KEY
+ *   值:     re_xxxxxxxxxxxx (從 resend.com 獲取)
  */
 
 export async function onRequest(context) {
   const { request, env } = context;
 
-  // 只接受 POST
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
@@ -25,6 +19,7 @@ export async function onRequest(context) {
   }
 
   try {
+    // 解析表單數據（支援 JSON 和 form 兩種）
     let data;
     const contentType = request.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {
@@ -35,7 +30,6 @@ export async function onRequest(context) {
     }
     const { name, email, phone, type, message } = data;
 
-    // 驗證必填欄位
     if (!name || !email || !message) {
       return new Response(JSON.stringify({ error: '請填寫必填欄位（姓名、電郵、訊息）' }), {
         status: 400,
@@ -43,7 +37,6 @@ export async function onRequest(context) {
       });
     }
 
-    // 驗證電郵格式
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(JSON.stringify({ error: '請輸入有效的電郵地址' }), {
         status: 400,
@@ -51,7 +44,7 @@ export async function onRequest(context) {
       });
     }
 
-    // 構建郵件內容
+    // 構建郵件 HTML
     const htmlContent = `
       <div style="font-family: 'Noto Sans TC', sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: #8B6F5E; padding: 20px; text-align: center;">
@@ -80,22 +73,32 @@ export async function onRequest(context) {
       </div>
     `;
 
-    // 嘗試發送郵件 (需要配置 SEND_EMAIL binding)
+    // 通過 Resend API 發送郵件
     let emailSent = false;
-    if (env.SEND_EMAIL) {
-      try {
-        await env.SEND_EMAIL.send({
-          from: { name: 'BEAUSKIN 聯繫表單', email: 'noreply@beautydiaro.com' },
-          to: [{ email: 'info@beauskin.com.hk', name: 'BEAUSKIN' }],
-          subject: `新查詢: ${type || '一般'} - ${name}`,
+    const apiKey = env.RESEND_API_KEY;
+    if (apiKey) {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: 'BEAUSKIN 綻顏 <noreply@beautydiaro.com>',
+          to: ['info@beauskin.com.hk'],
+          subject: `新查詢: ${escapeHtml(type || '一般')} - ${escapeHtml(name)}`,
           html: htmlContent,
-        });
+          reply_to: `${name} <${email}>`,
+        }),
+      });
+      if (res.ok) {
         emailSent = true;
-      } catch (sendErr) {
-        console.error('Send email failed:', sendErr);
+      } else {
+        const errBody = await res.text();
+        console.error('Resend API error:', res.status, errBody);
       }
     } else {
-      console.log('SEND_EMAIL binding not configured. Form data:', { name, email, phone, type, message });
+      console.log('RESEND_API_KEY not configured. Form data:', { name, email, phone, type, message });
     }
 
     return new Response(JSON.stringify({
