@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>內容管理 - BEAUSKIN 綻顏</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans TC', sans-serif; background: #FDF8F3; color: #4A3A30; min-height: 100vh; }
+    .header { background: #fff; border-bottom: 1px solid #E5C9B5; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+    .header .brand { display: flex; flex-direction: column; }
+    .header .zh { font-family: 'Noto Serif TC', serif; font-size: 18px; color: #8B6F5E; letter-spacing: 2px; }
+    .header .en { font-size: 10px; color: #D4A882; letter-spacing: 3px; text-transform: uppercase; }
+    .header .nav { display: flex; gap: 12px; align-items: center; }
+    .header .nav a { text-decoration: none; color: #8B6F5E; font-size: 13px; padding: 6px 14px; border-radius: 16px; transition: background 0.2s; }
+    .header .nav a:hover, .header .nav a.active { background: #F5EDE6; }
+    .header .nav .logout { color: #B8997E; }
+    .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+    .tabs { display: flex; gap: 0; margin-bottom: 24px; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #E5C9B5; }
+    .tabs button { flex: 1; padding: 12px; border: none; background: transparent; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: inherit; color: #B8997E; }
+    .tabs button.active { background: #8B6F5E; color: #fff; }
+    .tabs button:hover:not(.active) { background: #F5EDE6; }
+    .filter-bar { display:flex; gap:6px; margin-bottom:16px; }
+    .filter-bar button { padding:6px 16px; border-radius:16px; border:1px solid #E5C9B5; background:#fff; font-size:12px; cursor:pointer; transition:all 0.2s; font-family:inherit; color:#B8997E; }
+    .filter-bar button.active { background:#8B6F5E; color:#fff; border-color:#8B6F5E; }
+    .filter-bar button:hover:not(.active) { background:#F5EDE6; }
+    .filter-count { font-size:11px; color:#B8997E; margin-left:4px; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .toolbar h2 { font-family: 'Noto Serif TC', serif; font-size: 18px; }
+    .btn { padding: 8px 20px; border-radius: 20px; border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-primary { background: #8B6F5E; color: #fff; }
+    .btn-primary:hover { background: #6B5445; }
+    .btn-sm { padding: 5px 14px; font-size: 12px; }
+    .btn-danger { background: #e74c3c; color: #fff; }
+    .btn-danger:hover { background: #c0392b; }
+    .btn-outline { background: transparent; border: 1px solid #E5C9B5; color: #6B5445; }
+    .btn-outline:hover { background: #F5EDE6; }
+    .content-list { display: grid; gap: 8px; }
+    .content-item { background: #fff; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #F0E6DE; transition: box-shadow 0.2s; }
+    .content-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .content-item .info h3 { font-size: 15px; font-weight: 500; }
+    .content-item .info .meta { font-size: 12px; color: #B8997E; margin-top: 4px; display: flex; gap: 12px; }
+    .content-item .info .meta span { display: inline-flex; align-items: center; gap: 3px; }
+    .content-item .actions { display: flex; gap: 6px; }
+    .badge { font-size: 11px; padding: 2px 10px; border-radius: 10px; background: #F5EDE6; color: #8B6F5E; }
+    .badge-draft { background: #FFF8E1; color: #8D6E00; }
+    .badge-published { background: #E8F5E9; color: #2E7D32; }
+    .empty { text-align: center; padding: 40px; color: #B8997E; }
+    .empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #4A3A30; color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }
+    .toast.show { opacity: 1; }
+    .loading { text-align: center; padding: 60px 0; color: #B8997E; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #E5C9B5; border-top-color: #8B6F5E; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .confirm-dialog { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: none; justify-content: center; align-items: center; z-index: 50; }
+    .confirm-dialog.show { display: flex; }
+    .confirm-card { background: #fff; border-radius: 16px; padding: 32px; max-width: 360px; text-align: center; }
+    .confirm-card h3 { margin-bottom: 8px; font-family: 'Noto Serif TC', serif; }
+    .confirm-card p { color: #B8997E; font-size: 14px; margin-bottom: 20px; }
+    .confirm-card .btns { display: flex; gap: 10px; justify-content: center; }
+
+    /* 友情連結專用樣式 */
+    .link-card { background:#fff; border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:14px; border:1px solid #F0E6DE; }
+    .link-logo { width:44px;height:44px;border-radius:8px;background:#F5EDE6;display:flex;align-items:center;justify-content:center;color:#8B6F5E;font-size:16px;font-weight:600;overflow:hidden;flex-shrink:0; }
+    .link-logo img { width:100%;height:100%;object-fit:cover; }
+    .link-info { flex:1;min-width:0; }
+    .link-info h3 { font-size:15px;font-weight:500; }
+    .link-info .url { font-size:12px;color:#B8997E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .link-info .desc { font-size:12px;color:#999;margin-top:2px; }
+    .overlay { position:fixed;inset:0;background:rgba(0,0,0,0.3);display:none;justify-content:center;align-items:center;z-index:50; }
+    .overlay.show { display:flex; }
+    .modal { background:#fff;border-radius:16px;padding:32px;width:100%;max-width:480px;margin:20px;max-height:90vh;overflow-y:auto; }
+    .modal h3 { font-family:'Noto Serif TC',serif;margin-bottom:16px; }
+    .form-group { margin-bottom:12px; }
+    .form-group label { display:block;font-size:13px;font-weight:500;color:#6B5445;margin-bottom:4px; }
+    .form-group input,.form-group textarea { width:100%;padding:9px 12px;border:1px solid #E5C9B5;border-radius:8px;font-size:14px;outline:none;font-family:inherit; }
+    .form-group textarea { resize:vertical;min-height:60px; }
+    .form-actions { display:flex;gap:10px;margin-top:16px;justify-content:flex-end; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="/admin/dashboard.html" style="text-decoration:none">
+      <div class="brand">
+        <span class="zh">綻顏</span>
+        <span class="en">BEAUSKIN</span>
+      </div>
+    </a>
+    <div class="nav">
+      <a href="/admin/authors.html">👤 作者</a>
+      <a href="/" target="_blank">🌐 網站</a>
+      <a href="#" class="logout" onclick="logout()">登出</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tabs">
+      <button id="tabBlog" class="active" onclick="switchTab('blog')">📝 博客文章</button>
+      <button id="tabProduct" onclick="switchTab('product')">🧴 產品管理</button>
+      <button id="tabLinks" onclick="switchTab('links')">🔗 友情連結</button>
+    </div>
+
+    <div class="toolbar">
+      <h2 id="listTitle">博客文章</h2>
+      <button class="btn btn-primary" id="addBtn" onclick="createNew()">＋ 新增</button>
+    </div>
+
+    <!-- 狀態篩選（僅文章/產品顯示） -->
+    <div id="filterBar" class="filter-bar">
+      <button id="filterAll" class="active" onclick="setFilter('all')">全部</button>
+      <button id="filterPublished" onclick="setFilter('published')">已發布</button>
+      <button id="filterDrafts" onclick="setFilter('draft')">📝 草稿</button>
+    </div>
+
+    <div id="contentList" class="content-list">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>載入中...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 刪除確認對話框 -->
+  <div class="confirm-dialog" id="confirmDialog">
+    <div class="confirm-card">
+      <h3>確認刪除？</h3>
+      <p id="confirmMsg">此操作將永久刪除該內容</p>
+      <div class="btns">
+        <button class="btn btn-outline" onclick="closeConfirm()">取消</button>
+        <button class="btn btn-danger" onclick="confirmDelete()">刪除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 友情連結編輯彈窗 -->
+  <div class="overlay" id="linkEditorOverlay">
+    <div class="modal">
+      <h3 id="linkEditorTitle">新增連結</h3>
+      <input type="hidden" id="linkEditIndex">
+      <div class="form-group"><label>網站名稱 *</label><input id="linkName" placeholder="如: 友好網站"></div>
+      <div class="form-group"><label>網站網址 *</label><input id="linkUrl" placeholder="https://example.com"></div>
+      <div class="form-group"><label>網站簡介</label><textarea id="linkDesc" rows="2" placeholder="簡短介紹..."></textarea></div>
+      <div class="form-group">
+        <label>Logo / 圖示</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div id="logoPreview" style="width:44px;height:44px;border-radius:8px;background:#F5EDE6;display:flex;align-items:center;justify-content:center;color:#8B6F5E;font-size:16px;font-weight:600;overflow:hidden;flex-shrink:0">🔗</div>
+          <input type="text" id="linkLogo" placeholder="上傳後自動填入" readonly style="flex:1;background:#f5f0ea;cursor:pointer" onclick="uploadLinkLogo()">
+          <button type="button" class="btn btn-sm" style="background:#8B6F5E;color:#fff;border:none" onclick="uploadLinkLogo()">📁 上傳</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" style="background:transparent;border:1px solid #E5C9B5;color:#6B5445" onclick="closeLinkEditor()">取消</button>
+        <button class="btn btn-primary" onclick="saveLink()">儲存連結</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ===== 狀態變量 =====
+    let currentTab = 'blog';
+    let currentFilter = 'all';
+    let allItems = [];
+    let items = [];
+    let deleteTarget = null;
+
+    // 友情連結狀態
+    let links = [];
+    let linksSha = '';
+
+    // 檢查登入狀態
+    if (!sessionStorage.getItem('cms_auth')) {
+      window.location.href = '/admin/';
+    }
+
+    // ===== Tab 切換 =====
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('tabBlog').className = tab === 'blog' ? 'active' : '';
+      document.getElementById('tabProduct').className = tab === 'product' ? 'active' : '';
+      document.getElementById('tabLinks').className = tab === 'links' ? 'active' : '';
+
+      const filterBar = document.getElementById('filterBar');
+      const addBtn = document.getElementById('addBtn');
+
+      if (tab === 'links') {
+        document.getElementById('listTitle').textContent = '友情連結';
+        addBtn.textContent = '＋ 新增連結';
+        addBtn.onclick = openLinkEditor;
+        filterBar.style.display = 'none';
+        loadLinks();
+      } else {
+        const title = tab === 'blog' ? '博客文章' : '產品管理';
+        document.getElementById('listTitle').textContent = title;
+        addBtn.textContent = '＋ 新增';
+        addBtn.onclick = createNew;
+        filterBar.style.display = 'flex';
+        loadList();
+      }
+    }
+
+    // ===== 內容列表（博客/產品） =====
+    async function loadList() {
+      const list = document.getElementById('contentList');
+      list.innerHTML = '<div class="loading"><div class="spinner"></div><p>載入中...</p></div>';
+
+      try {
+        const res = await fetch('/api/cms?action=list', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: currentTab }),
+        });
+        const data = await res.json();
+        allItems = data.items || [];
+        applyFilter();
+      } catch (err) {
+        list.innerHTML = `<div class="empty"><p style="color:#c0392b">載入失敗：${err.message}</p></div>`;
+      }
+    }
+
+    function applyFilter() {
+      if (currentFilter === 'draft') {
+        items = allItems.filter(i => i.draft === true);
+      } else if (currentFilter === 'published') {
+        items = allItems.filter(i => i.draft !== true);
+      } else {
+        items = allItems;
+      }
+      renderList();
+      updateFilterCounts();
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.getElementById('filterAll').className = filter === 'all' ? 'active' : '';
+      document.getElementById('filterPublished').className = filter === 'published' ? 'active' : '';
+      document.getElementById('filterDrafts').className = filter === 'draft' ? 'active' : '';
+      applyFilter();
+    }
+
+    function updateFilterCounts() {
+      const total = allItems.length;
+      const draftCount = allItems.filter(i => i.draft === true).length;
+      const pubCount = total - draftCount;
+      document.getElementById('filterAll').innerHTML = `全部 <span class="filter-count">${total}</span>`;
+      document.getElementById('filterPublished').innerHTML = `已發布 <span class="filter-count">${pubCount}</span>`;
+      document.getElementById('filterDrafts').innerHTML = `📝 草稿 <span class="filter-count">${draftCount}</span>`;
+    }
+
+    function renderList() {
+      const list = document.getElementById('contentList');
+      if (items.length === 0) {
+        const msgs = { all: '暫無內容', published: '暫無已發布的文章', draft: '暫無草稿文章' };
+        list.innerHTML = `<div class="empty"><p>${msgs[currentFilter] || '暫無內容'}</p></div>`;
+        return;
+      }
+
+      list.innerHTML = items.map(item => {
+        const date = item.date ? item.date.slice(0, 10) : '';
+        const category = item.category || '';
+        const isDraft = item.draft === true;
+
+        return `<div class="content-item">
+          <div class="info">
+            <h3>${escapeHtml(item.title || item.slug)} ${isDraft ? '<span class="badge badge-draft">📝 草稿</span>' : '<span class="badge badge-published">✅ 已發布</span>'}</h3>
+            <div class="meta">
+              ${date ? `<span>📅 ${date}</span>` : ''}
+              ${category ? `<span class="badge">${escapeHtml(category)}</span>` : ''}
+              <span>📄 ${item.slug}.md</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-sm btn-outline" onclick="editItem('${item.slug}')">編輯</button>
+            <button class="btn btn-sm btn-danger" onclick="askDelete('${item.slug}')">刪除</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function createNew() {
+      window.location.href = `/admin/edit.html?type=${currentTab}`;
+    }
+
+    function editItem(slug) {
+      window.location.href = `/admin/edit.html?type=${currentTab}&slug=${slug}`;
+    }
+
+    function askDelete(slug) {
+      const item = items.find(i => i.slug === slug);
+      deleteTarget = { type: 'content', slug, sha: item?.sha };
+      document.getElementById('confirmMsg').textContent = `確定刪除「${escapeHtml(item?.title || slug)}」？`;
+      document.getElementById('confirmDialog').classList.add('show');
+    }
+
+    function closeConfirm() {
+      deleteTarget = null;
+      document.getElementById('confirmDialog').classList.remove('show');
+    }
+
+    async function confirmDelete() {
+      const target = deleteTarget;
+      closeConfirm();
+
+      if (target.type === 'link') {
+        // 刪除友情連結
+        links.splice(target.idx, 1);
+        try {
+          const res = await fetch('/api/cms?action=links_save', {
+            method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ links, sha: linksSha })
+          });
+          const result = await res.json();
+          if (result.success) { showToast('已刪除'); loadLinks(); }
+          else showToast('刪除失敗：' + (result.error||''));
+        } catch(err) { showToast('刪除失敗：'+err.message); }
+        return;
+      }
+
+      // 刪除內容
+      try {
+        const res = await fetch('/api/cms?action=delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: currentTab, slug: target.slug, sha: target.sha }),
+        });
+        const data = await res.json();
+        if (data.success) { showToast('已刪除'); loadList(); }
+        else showToast('刪除失敗：' + (data.error || ''));
+      } catch (err) { showToast('刪除失敗：' + err.message); }
+    }
+
+    function logout() {
+      sessionStorage.removeItem('cms_auth');
+      window.location.href = '/admin/';
+    }
+
+    // ===== 友情連結管理 =====
+    async function loadLinks() {
+      const list = document.getElementById('contentList');
+      list.innerHTML = '<div class="loading"><div class="spinner"></div><p>載入中...</p></div>';
+
+      try {
+        const res = await fetch('/api/cms?action=links_list');
+        const data = await res.json();
+        links = data.items || [];
+        linksSha = data.sha || '';
+        renderLinks();
+      } catch (err) {
+        list.innerHTML = `<div class="empty"><p style="color:#c0392b">載入失敗：${err.message}</p></div>`;
+      }
+    }
+
+    function renderLinks() {
+      const list = document.getElementById('contentList');
+      if (!links.length) {
+        list.innerHTML = '<div class="empty"><p>暫無友情連結，點擊「＋ 新增連結」開始添加</p></div>';
+        return;
+      }
+      list.innerHTML = links.map((l,i) => `<div class="link-card">
+        <div class="link-logo">${l.logo ? `<img src="${l.logo}" alt="${escapeHtml(l.name)}">` : '🔗'}</div>
+        <div class="link-info">
+          <h3>${escapeHtml(l.name)}</h3>
+          <div class="url"><a href="${escapeHtml(l.url)}" target="_blank" rel="noopener" style="color:#B8997E;text-decoration:none">${escapeHtml(l.url)}</a></div>
+          ${l.description ? `<div class="desc">${escapeHtml(l.description)}</div>` : ''}
+        </div>
+        <button class="btn btn-sm" style="background:#F5EDE6;color:#6B5445" onclick="openLinkEditor(${i})">編輯</button>
+        <button class="btn btn-sm btn-danger" onclick="askDeleteLink(${i})">刪除</button>
+      </div>`).join('');
+    }
+
+    function openLinkEditor(idx) {
+      idx = idx ?? -1;
+      document.getElementById('linkEditIndex').value = idx;
+      document.getElementById('linkEditorTitle').textContent = idx >= 0 ? '編輯連結' : '新增連結';
+      if (idx >= 0) {
+        const l = links[idx];
+        document.getElementById('linkName').value = l.name;
+        document.getElementById('linkUrl').value = l.url;
+        document.getElementById('linkDesc').value = l.description || '';
+        document.getElementById('linkLogo').value = l.logo || '';
+        updateLogoPreview(l.logo || '', l.name);
+      } else {
+        ['linkName','linkUrl','linkDesc','linkLogo'].forEach(id => document.getElementById(id).value = '');
+        updateLogoPreview('', '');
+      }
+      document.getElementById('linkEditorOverlay').classList.add('show');
+    }
+
+    function updateLogoPreview(url, name) {
+      const el = document.getElementById('logoPreview');
+      if (url) el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
+      else el.textContent = name ? name.charAt(0) : '🔗';
+    }
+
+    function uploadLinkLogo() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+      input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+        showToast('⏳ 上傳 Logo 中...');
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          const res = await fetch('/api/cms?action=upload', { method: 'POST', body: fd });
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById('linkLogo').value = data.url;
+            updateLogoPreview(data.url, document.getElementById('linkName').value);
+            showToast('✅ Logo 已上傳');
+          } else showToast('❌ '+(data.error||''));
+        } catch(err) { showToast('❌ '+err.message); }
+      };
+      input.click();
+    }
+
+    function closeLinkEditor() { document.getElementById('linkEditorOverlay').classList.remove('show'); }
+
+    async function saveLink() {
+      const idx = parseInt(document.getElementById('linkEditIndex').value);
+      const name = document.getElementById('linkName').value.trim();
+      const url = document.getElementById('linkUrl').value.trim();
+      if (!name || !url) { showToast('請填寫名稱和網址'); return; }
+      const data = { name, url, description: document.getElementById('linkDesc').value.trim(), logo: document.getElementById('linkLogo').value.trim() };
+
+      if (idx >= 0) links[idx] = data;
+      else links.push(data);
+
+      try {
+        const res = await fetch('/api/cms?action=links_save', {
+          method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ links, sha: linksSha })
+        });
+        const result = await res.json();
+        if (result.success) { showToast('✅ 已儲存'); closeLinkEditor(); renderLinks(); }
+        else showToast('❌ ' + (result.error||''));
+      } catch(err) { showToast('❌ '+err.message); }
+    }
+
+    function askDeleteLink(idx) {
+      const l = links[idx];
+      deleteTarget = { type: 'link', idx, name: l.name };
+      document.getElementById('confirmMsg').textContent = `確定刪除友情連結「${escapeHtml(l.name)}」？`;
+      document.getElementById('confirmDialog').classList.add('show');
+    }
+
+    // ===== 工具函數 =====
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // 初始化
+    loadList();
+  </script>
+</body>
+</html>

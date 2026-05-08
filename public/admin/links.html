@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>友情連結管理 - BEAUSKIN</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0;padding:0;box-sizing:border-box; }
+    body { font-family:'Noto Sans TC',sans-serif; background:#FDF8F3; color:#4A3A30; }
+    .header { background:#fff; border-bottom:1px solid #E5C9B5; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; }
+    .header .zh { font-family:'Noto Serif TC',serif; font-size:18px; color:#8B6F5E; letter-spacing:2px; }
+    .container { max-width:800px; margin:0 auto; padding:24px; }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .toolbar h2 { font-family:'Noto Serif TC',serif; font-size:18px; }
+    .btn { padding:8px 20px; border-radius:20px; border:none; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; }
+    .btn-primary { background:#8B6F5E; color:#fff; }
+    .btn-primary:hover { background:#6B5445; }
+    .btn-danger { background:#e74c3c; color:#fff; }
+    .btn-sm { padding:5px 14px; font-size:12px; }
+    .link-list { display:grid; gap:8px; }
+    .link-card { background:#fff; border-radius:12px; padding:16px 20px; display:flex; align-items:center; gap:14px; border:1px solid #F0E6DE; }
+    .link-logo { width:44px;height:44px;border-radius:8px;background:#F5EDE6;display:flex;align-items:center;justify-content:center;color:#8B6F5E;font-size:16px;font-weight:600;overflow:hidden;flex-shrink:0; }
+    .link-logo img { width:100%;height:100%;object-fit:cover; }
+    .link-info { flex:1;min-width:0; }
+    .link-info h3 { font-size:15px;font-weight:500; }
+    .link-info .url { font-size:12px;color:#B8997E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .link-info .desc { font-size:12px;color:#999;margin-top:2px; }
+    .overlay { position:fixed;inset:0;background:rgba(0,0,0,0.3);display:none;justify-content:center;align-items:center;z-index:50; }
+    .overlay.show { display:flex; }
+    .modal { background:#fff;border-radius:16px;padding:32px;width:100%;max-width:480px;margin:20px; }
+    .modal h3 { font-family:'Noto Serif TC',serif;margin-bottom:16px; }
+    .form-group { margin-bottom:12px; }
+    .form-group label { display:block;font-size:13px;font-weight:500;color:#6B5445;margin-bottom:4px; }
+    .form-group input,.form-group textarea { width:100%;padding:9px 12px;border:1px solid #E5C9B5;border-radius:8px;font-size:14px;outline:none;font-family:inherit; }
+    .form-group textarea { resize:vertical;min-height:60px; }
+    .form-actions { display:flex;gap:10px;margin-top:16px;justify-content:flex-end; }
+    .toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#4A3A30;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;opacity:0;transition:opacity 0.3s;pointer-events:none;z-index:100; }
+    .toast.show { opacity:1; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="/admin/dashboard.html" style="text-decoration:none;color:inherit"><span class="zh">← 返回</span></a>
+    <span class="zh">友情連結管理</span>
+    <span></span>
+  </div>
+  <div class="container">
+    <div class="toolbar">
+      <h2>友情連結列表</h2>
+      <button class="btn btn-primary" onclick="openEditor()">＋ 新增連結</button>
+    </div>
+    <div class="link-list" id="linkList"><p style="color:#B8997E;text-align:center;padding:40px">載入中...</p></div>
+  </div>
+
+  <div class="overlay" id="editorOverlay">
+    <div class="modal">
+      <h3 id="editorTitle">新增連結</h3>
+      <input type="hidden" id="editIndex">
+      <div class="form-group"><label>網站名稱 *</label><input id="linkName" placeholder="如: 友好網站"></div>
+      <div class="form-group"><label>網站網址 *</label><input id="linkUrl" placeholder="https://example.com"></div>
+      <div class="form-group"><label>網站簡介</label><textarea id="linkDesc" rows="2" placeholder="簡短介紹..."></textarea></div>
+      <div class="form-group">
+        <label>Logo / 圖示</label>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div id="logoPreview" style="width:44px;height:44px;border-radius:8px;background:#F5EDE6;display:flex;align-items:center;justify-content:center;color:#8B6F5E;font-size:16px;font-weight:600;overflow:hidden;flex-shrink:0">?</div>
+          <input type="text" id="linkLogo" placeholder="上傳後自動填入" readonly style="flex:1;background:#f5f0ea;cursor:pointer" onclick="uploadLogo()">
+          <button type="button" class="btn btn-sm" style="background:#8B6F5E;color:#fff;border:none" onclick="uploadLogo()">📁 上傳</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" style="background:transparent;border:1px solid #E5C9B5;color:#6B5445" onclick="closeEditor()">取消</button>
+        <button class="btn btn-primary" onclick="saveLink()">儲存連結</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    if (!sessionStorage.getItem('cms_auth')) { window.location.href = '/admin/'; }
+    let links = [], sha = '';
+
+    async function loadLinks() {
+      try {
+        const res = await fetch('/api/cms?action=links_list');
+        const data = await res.json();
+        links = data.items || [];
+        sha = data.sha || '';
+        render();
+      } catch {}
+    }
+
+    function render() {
+      const el = document.getElementById('linkList');
+      if (!links.length) { el.innerHTML = '<p style="color:#B8997E;text-align:center;padding:40px">暫無友情連結</p>'; return; }
+      el.innerHTML = links.map((l,i) => `<div class="link-card">
+        <div class="link-logo">${l.logo ? `<img src="${l.logo}" alt="${esc(l.name)}">` : '🔗'}</div>
+        <div class="link-info">
+          <h3>${esc(l.name)}</h3>
+          <div class="url"><a href="${esc(l.url)}" target="_blank" rel="noopener" style="color:#B8997E;text-decoration:none">${esc(l.url)}</a></div>
+          ${l.description ? `<div class="desc">${esc(l.description)}</div>` : ''}
+        </div>
+        <button class="btn btn-sm" style="background:#F5EDE6;color:#6B5445" onclick="openEditor(${i})">編輯</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteLink(${i})">刪除</button>
+      </div>`).join('');
+    }
+
+    function openEditor(idx) {
+      idx = idx ?? -1;
+      document.getElementById('editIndex').value = idx;
+      document.getElementById('editorTitle').textContent = idx >= 0 ? '編輯連結' : '新增連結';
+      if (idx >= 0) {
+        const l = links[idx];
+        document.getElementById('linkName').value = l.name;
+        document.getElementById('linkUrl').value = l.url;
+        document.getElementById('linkDesc').value = l.description || '';
+        document.getElementById('linkLogo').value = l.logo || '';
+        updateLogoPreview(l.logo || '', l.name);
+      } else {
+        ['linkName','linkUrl','linkDesc','linkLogo'].forEach(id => document.getElementById(id).value = '');
+        updateLogoPreview('', '');
+      }
+      document.getElementById('editorOverlay').classList.add('show');
+    }
+
+    function updateLogoPreview(url, name) {
+      const el = document.getElementById('logoPreview');
+      if (url) el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`;
+      else el.textContent = name ? name.charAt(0) : '🔗';
+    }
+
+    function uploadLogo() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/png,image/jpeg,image/gif,image/webp';
+      input.onchange = async () => {
+        const file = input.files[0];
+        if (!file) return;
+        showToast('⏳ 上傳 Logo 中...');
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          const res = await fetch('/api/cms?action=upload', { method: 'POST', body: fd });
+          const data = await res.json();
+          if (data.success) {
+            document.getElementById('linkLogo').value = data.url;
+            updateLogoPreview(data.url, document.getElementById('linkName').value);
+            showToast('✅ Logo 已上傳');
+          } else showToast('❌ '+(data.error||''));
+        } catch(err) { showToast('❌ '+err.message); }
+      };
+      input.click();
+    }
+
+    function closeEditor() { document.getElementById('editorOverlay').classList.remove('show'); }
+
+    async function saveLink() {
+      const idx = parseInt(document.getElementById('editIndex').value);
+      const name = document.getElementById('linkName').value.trim();
+      const url = document.getElementById('linkUrl').value.trim();
+      if (!name || !url) { showToast('請填寫名稱和網址'); return; }
+      const data = { name, url, description: document.getElementById('linkDesc').value.trim(), logo: document.getElementById('linkLogo').value.trim() };
+
+      if (idx >= 0) links[idx] = data;
+      else links.push(data);
+
+      try {
+        const res = await fetch('/api/cms?action=links_save', {
+          method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ links, sha })
+        });
+        const result = await res.json();
+        if (result.success) { showToast('✅ 已儲存'); closeEditor(); render(); }
+        else showToast('❌ ' + (result.error||''));
+      } catch(err) { showToast('❌ '+err.message); }
+    }
+
+    async function deleteLink(idx) {
+      if (!confirm('確定刪除此友情連結？')) return;
+      links.splice(idx, 1);
+      try {
+        await fetch('/api/cms?action=links_save', {
+          method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ links, sha })
+        });
+        render(); showToast('已刪除');
+      } catch(err) { showToast('❌ '+err.message); }
+    }
+
+    function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'; setTimeout(()=>t.classList.remove('show'),2500); }
+    loadLinks();
+  </script>
+</body>
+</html>

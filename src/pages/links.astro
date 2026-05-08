@@ -1,0 +1,72 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import links from '../data/links.json';
+---
+
+<BaseLayout
+  title="友情連結 — 綻顏 BEAUSKIN"
+  description="BEAUSKIN 綻顏的友好合作網站與資源連結。"
+>
+
+  <!-- Hero Banner -->
+  <section class="bg-brand-50 py-20">
+    <div class="max-w-6xl mx-auto px-4 text-center">
+      <p class="text-brand-500 text-sm tracking-[0.2em] uppercase mb-2">FRIEND LINKS</p>
+      <h1 class="font-serif text-3xl md:text-4xl text-brand-800 mb-4">友情連結</h1>
+      <p class="text-gray-500 max-w-lg mx-auto leading-relaxed">
+        以下是 BEAUSKIN 的合作夥伴與友好網站，歡迎前往探索更多優質內容。
+      </p>
+    </div>
+  </section>
+
+  <!-- Links Grid -->
+  <section class="py-16 bg-white">
+    <div class="max-w-5xl mx-auto px-4">
+      {links.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {links.map((link) => (
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group block rounded-2xl border border-gray-100 p-6 hover:border-brand-200 hover:shadow-md transition-all"
+            >
+              <div class="flex items-start gap-4">
+                <div class="w-14 h-14 rounded-xl bg-brand-50 flex items-center justify-center shrink-0 overflow-hidden text-2xl">
+                  {link.logo
+                    ? <img src={link.logo} alt={link.name} class="w-full h-full object-cover" />
+                    : <span class="text-brand-400">🔗</span>
+                  }
+                </div>
+                <div class="min-w-0">
+                  <h3 class="font-medium text-brand-800 group-hover:text-brand-600 transition-colors">{link.name}</h3>
+                  {link.description && (
+                    <p class="text-sm text-gray-500 mt-1 leading-relaxed">{link.description}</p>
+                  )}
+                  <p class="text-xs text-brand-400 mt-2 truncate">{link.url}</p>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-20 text-gray-400">
+          <p>暫無友情連結</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- 申請友情連結 -->
+  <section class="py-16 bg-brand-50">
+    <div class="max-w-2xl mx-auto px-4 text-center">
+      <h2 class="font-serif text-2xl text-brand-800 mb-4">申請友情連結</h2>
+      <p class="text-gray-500 leading-relaxed mb-8">
+        如果您希望與 BEAUSKIN 交換友情連結，歡迎透過
+        <a href="/contact" class="text-brand-600 hover:text-brand-700 underline">聯繫我們</a>
+        頁面提交申請，我們會儘快審核。
+      </p>
+    </div>
+  </section>
+
+</BaseLayout>
